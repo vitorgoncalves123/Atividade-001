@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Lista de Compras</h2>
+<a class="btn" href="{{ url_for('compras_create') }}">Novo(a)</a>
+<table><thead><tr>
+<th>id</th>
+<th>usuario_id</th>
+<th>anuncio_id</th>
+<th>quantidade</th>
+<th>total</th>
+<th>criado_em</th>
+<th>Ações</th></tr></thead><tbody>
+{% for item in compras %}
+<tr>
+<td>{{ item.id }}</td>
+<td>{{ item.usuario_id }}</td>
+<td>{{ item.anuncio_id }}</td>
+<td>{{ item.quantidade }}</td>
+<td>{{ item.total }}</td>
+<td>{{ item.criado_em }}</td>
+<td><a href="{{ url_for('compras_edit', id=item.id) }}">Editar</a> | <a href="{{ url_for('compras_delete', id=item.id) }}">Excluir</a></td>
+</tr>
+{% endfor %}</tbody></table>
+{% endblock %}

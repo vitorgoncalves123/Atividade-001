@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Confirmar exclusão</h2>
+<p>Tem certeza que deseja excluir este registro (ID: {{ anuncio.id }})?</p>
+<form method="POST">
+<button type="submit">Confirmar</button>
+<a class="btn" href="{{ url_for('anuncios_list') }}">Cancelar</a>
+</form>
+{% endblock %}

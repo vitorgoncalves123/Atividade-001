@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Lista de Usuarios</h2>
+<a class="btn" href="{{ url_for('usuarios_create') }}">Novo(a)</a>
+<table><thead><tr>
+<th>id</th>
+<th>nome</th>
+<th>email</th>
+<th>Ações</th></tr></thead><tbody>
+{% for item in usuarios %}
+<tr>
+<td>{{ item.id }}</td>
+<td>{{ item.nome }}</td>
+<td>{{ item.email }}</td>
+<td><a href="{{ url_for('usuarios_edit', id=item.id) }}">Editar</a> | <a href="{{ url_for('usuarios_delete', id=item.id) }}">Excluir</a></td>
+</tr>
+{% endfor %}</tbody></table>
+{% endblock %}

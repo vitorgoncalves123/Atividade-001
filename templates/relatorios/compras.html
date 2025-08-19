@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Relatório de Compras</h2>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th><th>Usuário</th><th>Anúncio</th><th>Quantidade</th><th>Total</th><th>Criado em</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in compras %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td>{{ c.cliente.nome if c.cliente else c.usuario_id }}</td>
+      <td>{{ c.anuncio.titulo if c.anuncio else c.anuncio_id }}</td>
+      <td>{{ c.quantidade }}</td>
+      <td>{{ c.total }}</td>
+      <td>{{ c.criado_em }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><th colspan="4">Total geral</th><th colspan="2">{{ total }}</th></tr>
+  </tfoot>
+</table>
+{% endblock %}
