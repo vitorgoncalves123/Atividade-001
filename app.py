@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
-from models import db, Usuario, Categoria, Anuncio, Compra, Pergunta, Resposta, Favorito
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import db, Usuario, Compra, Venda, Pergunta, Resposta
 import os
 
 app = Flask(__name__)
+from functools import wraps
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -24,6 +26,73 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        senha = request.form.get("senha")
+        if not email or not senha:
+            flash("Informe email e senha.", "warning")
+            return render_template("login.html")
+        user = Usuario.query.filter_by(email=email).first()
+        if user and user.verificar_senha(senha):
+            session["usuario_id"] = user.id
+            session["usuario_nome"] = user.nome
+            flash("Login realizado com sucesso!", "success")
+            next_url = request.args.get("next") or url_for("index")
+            return redirect(next_url)
+        else:
+            flash("Email ou senha inválidos.", "danger")
+    return render_template("login.html")
+
+@app.route("/cadastro", methods=["GET", "POST"])
+def cadastro():
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        email = request.form.get("email")
+        senha = request.form.get("senha")
+        if not nome or not email or not senha:
+            flash("Preencha todos os campos.", "warning")
+            return render_template("cadastro.html")
+        existente = Usuario.query.filter_by(email=email).first()
+        if existente:
+            flash("E-mail já cadastrado. Faça login.", "info")
+            return redirect(url_for("login"))
+        novo = Usuario(nome=nome, email=email)
+        novo.set_senha(senha)
+        db.session.add(novo)
+        db.session.commit()
+        flash("Cadastro realizado! Agora faça login.", "success")
+        return redirect(url_for("login"))
+    return render_template("cadastro.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Você saiu da sua conta.", "info")
+    return redirect(url_for("index"))
+
+@app.route("/perfil")
+def perfil():
+    uid = session.get("usuario_id")
+    if not uid:
+        flash("Faça login para acessar o perfil.", "warning")
+        return redirect(url_for("login"))
+    usuario = Usuario.query.get(uid)
+    return render_template("perfil.html", usuario=usuario)
+
+PUBLIC_ENDPOINTS = {"index", "login", "cadastro", "static"}
+
+@app.before_request
+def require_login():
+    from flask import request
+    if request.endpoint is None:
+        return
+    if any([request.endpoint == e or request.endpoint.startswith(e + ".") for e in PUBLIC_ENDPOINTS]):
+        return
+    if not session.get("usuario_id"):
+        return redirect(url_for("login", next=request.path))
 
 @app.route("/")
 def index():
@@ -77,89 +146,6 @@ def usuarios_delete(id):
         return redirect(url_for("usuarios_list"))
     return render_template("usuarios/confirmar_exclusao.html", usuario=u)
 
-@app.route("/categorias")
-def categorias_list():
-    app.logger.info("Oi")
-    categorias = Categoria.query.all()
-    return render_template("categorias/listar.html", categorias=categorias)
-
-@app.route("/categorias/novo", methods=["GET", "POST"])
-def categorias_create():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        c = Categoria(nome=nome)
-        db.session.add(c); db.session.commit()
-        flash("Categoria criada com sucesso!")
-        return redirect(url_for("categorias_list"))
-    return render_template("categorias/form.html", categoria=None)
-
-@app.route("/categorias/editar/<int:id>", methods=["GET", "POST"])
-def categorias_edit(id):
-    c = Categoria.query.get_or_404(id)
-    if request.method == "POST":
-        c.nome = request.form["nome"]
-        db.session.commit()
-        flash("Categoria atualizada com sucesso!")
-        return redirect(url_for("categorias_list"))
-    return render_template("categorias/form.html", categoria=c)
-
-@app.route("/categorias/excluir/<int:id>", methods=["GET", "POST"])
-def categorias_delete(id):
-    c = Categoria.query.get_or_404(id)
-    if request.method == "POST":
-        db.session.delete(c); db.session.commit()
-        flash("Categoria excluída com sucesso!")
-        return redirect(url_for("categorias_list"))
-    return render_template("categorias/confirmar_exclusao.html", categoria=c)
-
-@app.route("/anuncios")
-def anuncios_list():
-    anuncios = Anuncio.query.all()
-    categorias = Categoria.query.all()
-    usuarios = Usuario.query.all()
-    return render_template("anuncios/listar.html", anuncios=anuncios, categorias=categorias, usuarios=usuarios)
-
-@app.route("/anuncios/novo", methods=["GET", "POST"])
-def anuncios_create():
-    if request.method == "POST":
-        titulo = request.form["titulo"]
-        descricao = request.form.get("descricao")
-        preco = get_float(request.form, "preco", 0.0)
-        categoria_id = get_int(request.form, "categoria_id")
-        usuario_id = get_int(request.form, "usuario_id")
-        a = Anuncio(titulo=titulo, descricao=descricao, preco=preco, categoria_id=categoria_id, usuario_id=usuario_id)
-        db.session.add(a); db.session.commit()
-        flash("Anúncio criado com sucesso!")
-        return redirect(url_for("anuncios_list"))
-    categorias = Categoria.query.all()
-    usuarios = Usuario.query.all()
-    return render_template("anuncios/form.html", anuncio=None, categorias=categorias, usuarios=usuarios)
-
-@app.route("/anuncios/editar/<int:id>", methods=["GET", "POST"])
-def anuncios_edit(id):
-    a = Anuncio.query.get_or_404(id)
-    if request.method == "POST":
-        a.titulo = request.form["titulo"]
-        a.descricao = request.form.get("descricao")
-        a.preco = get_float(request.form, "preco", a.preco)
-        a.categoria_id = get_int(request.form, "categoria_id", a.categoria_id)
-        a.usuario_id = get_int(request.form, "usuario_id", a.usuario_id)
-        db.session.commit()
-        flash("Anúncio atualizado com sucesso!")
-        return redirect(url_for("anuncios_list"))
-    categorias = Categoria.query.all()
-    usuarios = Usuario.query.all()
-    return render_template("anuncios/form.html", anuncio=a, categorias=categorias, usuarios=usuarios)
-
-@app.route("/anuncios/excluir/<int:id>", methods=["GET", "POST"])
-def anuncios_delete(id):
-    a = Anuncio.query.get_or_404(id)
-    if request.method == "POST":
-        db.session.delete(a); db.session.commit()
-        flash("Anúncio excluído com sucesso!")
-        return redirect(url_for("anuncios_list"))
-    return render_template("anuncios/confirmar_exclusao.html", anuncio=a)
-
 @app.route("/compras")
 def compras_list():
     compras = Compra.query.all()
@@ -169,31 +155,25 @@ def compras_list():
 def compras_create():
     if request.method == "POST":
         usuario_id = get_int(request.form, "usuario_id")
-        anuncio_id = get_int(request.form, "anuncio_id")
         quantidade = get_int(request.form, "quantidade", 1)
-        total = get_float(request.form, "total", 0.0)
-        c = Compra(usuario_id=usuario_id, anuncio_id=anuncio_id, quantidade=quantidade, total=total)
+        c = Compra(usuario_id=usuario_id, quantidade=quantidade)
         db.session.add(c); db.session.commit()
         flash("Compra registrada com sucesso!")
         return redirect(url_for("compras_list"))
     usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("compras/form.html", compra=None, usuarios=usuarios, anuncios=anuncios)
+    return render_template("compras/form.html", compra=None, usuarios=usuarios)
 
 @app.route("/compras/editar/<int:id>", methods=["GET", "POST"])
 def compras_edit(id):
     c = Compra.query.get_or_404(id)
     if request.method == "POST":
         c.usuario_id = get_int(request.form, "usuario_id", c.usuario_id)
-        c.anuncio_id = get_int(request.form, "anuncio_id", c.anuncio_id)
         c.quantidade = get_int(request.form, "quantidade", c.quantidade)
-        c.total = get_float(request.form, "total", c.total)
         db.session.commit()
         flash("Compra atualizada com sucesso!")
         return redirect(url_for("compras_list"))
     usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("compras/form.html", compra=c, usuarios=usuarios, anuncios=anuncios)
+    return render_template("compras/form.html", compra=c, usuarios=usuarios)
 
 @app.route("/compras/excluir/<int:id>", methods=["GET", "POST"])
 def compras_delete(id):
@@ -204,6 +184,45 @@ def compras_delete(id):
         return redirect(url_for("compras_list"))
     return render_template("compras/confirmar_exclusao.html", compra=c)
 
+@app.route("/vendas")
+def vendas_list():
+    vendas = Venda.query.all()
+    return render_template("vendas/listar.html", vendas=vendas)
+
+@app.route("/vendas/novo", methods=["GET", "POST"])
+def vendas_create():
+    if request.method == "POST":
+        usuario_id = get_int(request.form, "usuario_id")
+        quantidade = get_int(request.form, "quantidade", 1)
+        c = Venda(usuario_id=usuario_id, quantidade=quantidade)
+        db.session.add(c); db.session.commit()
+        flash("Venda registrada com sucesso!")
+        return redirect(url_for("vendas_list"))
+    usuarios = Usuario.query.all()
+    return render_template("vendas/form.html", venda=None, usuarios=usuarios)
+
+@app.route("/vendas/editar/<int:id>", methods=["GET", "POST"])
+def vendas_edit(id):
+    c = Venda.query.get_or_404(id)
+    if request.method == "POST":
+        c.usuario_id = get_int(request.form, "usuario_id", c.usuario_id)
+        c.quantidade = get_int(request.form, "quantidade", c.quantidade)
+        db.session.commit()
+        flash("Venda atualizada com sucesso!")
+        return redirect(url_for("vendas_list"))
+    usuarios = Usuario.query.all()
+    return render_template("vendas/form.html", venda=c, usuarios=usuarios)
+
+@app.route("/vendas/excluir/<int:id>", methods=["GET", "POST"])
+def vendas_delete(id):
+    c = Venda.query.get_or_404(id)
+    if request.method == "POST":
+        db.session.delete(c); db.session.commit()
+        flash("Venda excluída com sucesso!")
+        return redirect(url_for("vendas_list"))
+    return render_template("vendas/confirmar_exclusao.html", venda=c)
+
+
 @app.route("/perguntas")
 def perguntas_list():
     perguntas = Pergunta.query.all()
@@ -213,29 +232,25 @@ def perguntas_list():
 def perguntas_create():
     if request.method == "POST":
         usuario_id = get_int(request.form, "usuario_id")
-        anuncio_id = get_int(request.form, "anuncio_id")
         texto = request.form["texto"]
-        p = Pergunta(usuario_id=usuario_id, anuncio_id=anuncio_id, texto=texto)
+        p = Pergunta(usuario_id=usuario_id, texto=texto)
         db.session.add(p); db.session.commit()
         flash("Pergunta criada com sucesso!")
         return redirect(url_for("perguntas_list"))
     usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("perguntas/form.html", pergunta=None, usuarios=usuarios, anuncios=anuncios)
+    return render_template("perguntas/form.html", pergunta=None, usuarios=usuarios)
 
 @app.route("/perguntas/editar/<int:id>", methods=["GET", "POST"])
 def perguntas_edit(id):
     p = Pergunta.query.get_or_404(id)
     if request.method == "POST":
         p.usuario_id = get_int(request.form, "usuario_id", p.usuario_id)
-        p.anuncio_id = get_int(request.form, "anuncio_id", p.anuncio_id)
         p.texto = request.form["texto"]
         db.session.commit()
         flash("Pergunta atualizada com sucesso!")
         return redirect(url_for("perguntas_list"))
     usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("perguntas/form.html", pergunta=p, usuarios=usuarios, anuncios=anuncios)
+    return render_template("perguntas/form.html", pergunta=p, usuarios=usuarios)
 
 @app.route("/perguntas/excluir/<int:id>", methods=["GET", "POST"])
 def perguntas_delete(id):
@@ -287,52 +302,6 @@ def respostas_delete(id):
         flash("Resposta excluída com sucesso!")
         return redirect(url_for("respostas_list"))
     return render_template("respostas/confirmar_exclusao.html", resposta=r)
-
-@app.route("/favoritos")
-def favoritos_list():
-    favoritos = Favorito.query.all()
-    return render_template("favoritos/listar.html", favoritos=favoritos)
-
-@app.route("/favoritos/novo", methods=["GET", "POST"])
-def favoritos_create():
-    if request.method == "POST":
-        usuario_id = get_int(request.form, "usuario_id")
-        anuncio_id = get_int(request.form, "anuncio_id")
-        f = Favorito(usuario_id=usuario_id, anuncio_id=anuncio_id)
-        db.session.add(f); db.session.commit()
-        flash("Favorito adicionado com sucesso!")
-        return redirect(url_for("favoritos_list"))
-    usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("favoritos/form.html", favorito=None, usuarios=usuarios, anuncios=anuncios)
-
-@app.route("/favoritos/editar/<int:id>", methods=["GET", "POST"])
-def favoritos_edit(id):
-    f = Favorito.query.get_or_404(id)
-    if request.method == "POST":
-        f.usuario_id = get_int(request.form, "usuario_id", f.usuario_id)
-        f.anuncio_id = get_int(request.form, "anuncio_id", f.anuncio_id)
-        db.session.commit()
-        flash("Favorito atualizado com sucesso!")
-        return redirect(url_for("favoritos_list"))
-    usuarios = Usuario.query.all()
-    anuncios = Anuncio.query.all()
-    return render_template("favoritos/form.html", favorito=f, usuarios=usuarios, anuncios=anuncios)
-
-@app.route("/favoritos/excluir/<int:id>", methods=["GET", "POST"])
-def favoritos_delete(id):
-    f = Favorito.query.get_or_404(id)
-    if request.method == "POST":
-        db.session.delete(f); db.session.commit()
-        flash("Favorito excluído com sucesso!")
-        return redirect(url_for("favoritos_list"))
-    return render_template("favoritos/confirmar_exclusao.html", favorito=f)
-
-@app.route("/relatorio-compras")
-def relatorio_compras():
-    compras = Compra.query.all()
-    total = sum([c.total for c in compras])
-    return render_template("relatorios/compras.html", compras=compras, total=total)
 
 if __name__ == "__main__":
     app.run(debug=True)

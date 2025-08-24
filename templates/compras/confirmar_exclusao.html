@@ -3,7 +3,7 @@
 <h2>Confirmar exclusão</h2>
 <p>Tem certeza que deseja excluir este registro (ID: {{ compra.id }})?</p>
 <form method="POST">
-<button type="submit">Confirmar</button>
+<button type="submit" class="btn btn-primary">Confirmar</button>
 <a class="btn" href="{{ url_for('compras_list') }}">Cancelar</a>
 </form>
 {% endblock %}

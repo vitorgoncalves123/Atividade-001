@@ -1,21 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Lista de Perguntas</h2>
-<a class="btn" href="{{ url_for('perguntas_create') }}">Novo(a)</a>
-<table><thead><tr>
+<a class="btn btn-primary" href="{{ url_for('perguntas_create') }}">Novo(a)</a>
+<table class="table table-striped table-hover"><thead><tr>
 <th>id</th>
 <th>usuario_id</th>
-<th>anuncio_id</th>
 <th>texto</th>
-<th>criado_em</th>
 <th>Ações</th></tr></thead><tbody>
 {% for item in perguntas %}
 <tr>
 <td>{{ item.id }}</td>
 <td>{{ item.usuario_id }}</td>
-<td>{{ item.anuncio_id }}</td>
 <td>{{ item.texto }}</td>
-<td>{{ item.criado_em }}</td>
 <td><a href="{{ url_for('perguntas_edit', id=item.id) }}">Editar</a> | <a href="{{ url_for('perguntas_delete', id=item.id) }}">Excluir</a></td>
 </tr>
 {% endfor %}</tbody></table>

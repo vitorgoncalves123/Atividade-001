@@ -1,9 +1,0 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>{{ categorias and 'Editar' or 'Novo(a)' }} Categoria</h2>
-<form method="POST">
-<label for="nome">nome:</label>
-<input type="text" name="nome" id="nome" value="{{ categoria.nome if categoria else "" }}">
-<button type="submit">Salvar</button>
-</form>
-{% endblock %}

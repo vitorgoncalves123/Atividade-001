@@ -3,9 +3,9 @@
 <h2>{{ usuarios and 'Editar' or 'Novo(a)' }} Usuário</h2>
 <form method="POST">
 <label for="nome">nome:</label>
-<input type="text" name="nome" id="nome" value="{{ usuario.nome if usuario else "" }}">
+<input type="text" name="nome" id="nome" value="{{ usuario.nome if usuario else "" }}" class="form-control">
 <label for="email">email:</label>
-<input type="text" name="email" id="email" value="{{ usuario.email if usuario else "" }}">
-<button type="submit">Salvar</button>
+<input type="text" name="email" id="email" value="{{ usuario.email if usuario else "" }}" class="form-control">
+<button type="submit" class="btn btn-primary">Salvar</button>
 </form>
 {% endblock %}

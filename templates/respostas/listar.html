@@ -1,13 +1,12 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Lista de Respostas</h2>
-<a class="btn" href="{{ url_for('respostas_create') }}">Novo(a)</a>
-<table><thead><tr>
+<a class="btn btn-primary" href="{{ url_for('respostas_create') }}">Novo(a)</a>
+<table class="table table-striped table-hover"><thead><tr>
 <th>id</th>
 <th>pergunta_id</th>
 <th>usuario_id</th>
 <th>texto</th>
-<th>criado_em</th>
 <th>Ações</th></tr></thead><tbody>
 {% for item in respostas %}
 <tr>
@@ -15,7 +14,6 @@
 <td>{{ item.pergunta_id }}</td>
 <td>{{ item.usuario_id }}</td>
 <td>{{ item.texto }}</td>
-<td>{{ item.criado_em }}</td>
 <td><a href="{{ url_for('respostas_edit', id=item.id) }}">Editar</a> | <a href="{{ url_for('respostas_delete', id=item.id) }}">Excluir</a></td>
 </tr>
 {% endfor %}</tbody></table>
