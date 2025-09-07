@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Produtos</h3>
+  <a class="btn btn-light" href="{{ url_for('produto_novo') }}">Novo Produto</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr><th>Nome</th><th>Preço</th><th>Quantidade</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for p in produtos %}
+    <tr>
+      <td>{{ p.nome }}</td>
+      <td>R$ {{ '%.2f'|format(p.preco) }}</td>
+      <td>{{ p.quantidade }}</td>
+      <td>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('produto_editar', id=p.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('produto_excluir', id=p.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger">Excluir</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

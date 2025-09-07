@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Anúncios</h3>
+  <a class="btn btn-light" href="{{ url_for('anuncio_novo') }}">Novo Anúncio</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr><th>Produto</th><th>Preço</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for a in anuncios %}
+    <tr>
+      <td>{{ a.produto.nome }}</td>
+      <td>R$ {{ '%.2f'|format(a.preco) }}</td>
+      <td>{{ a.status }}</td>
+      <td>
+        <form method="post" action="{{ url_for('anuncio_excluir', id=a.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger">Excluir</button>
+        </form>
+        {% if a.status != 'vendido' %}
+        <a class="btn btn-sm btn-success" href="{{ url_for('venda_registrar', anuncio_id=a.id) }}">Vender</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

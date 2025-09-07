@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Vendas</h3>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr><th>Anúncio</th><th>Produto</th><th>Comprador</th><th>ID</th></tr>
+  </thead>
+  <tbody>
+    {% for v in vendas %}
+    <tr>
+      <td>#{{ v.anuncio.id }}</td>
+      <td>{{ v.anuncio.produto.nome }}</td>
+      <td>{{ v.comprador }}</td>
+      <td>{{ v.id }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

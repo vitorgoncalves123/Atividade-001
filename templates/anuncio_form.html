@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Novo Anúncio</h3>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Produto</label>
+    <select name="produto_id" class="form-select">
+      {% for p in produtos %}
+      <option value="{{ p.id }}">{{ p.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Preço</label>
+    <input name="preco" class="form-control">
+  </div>
+  <button class="btn btn-light">Criar</button>
+  <a class="btn btn-secondary" href="{{ url_for('anuncios') }}">Cancelar</a>
+</form>
+{% endblock %}
